@@ -1,0 +1,218 @@
+#!/bin/bash
+###########################################
+#	Project	:	Eassy-ApkTool             #
+#	Author	:	xiaozhuai                 #
+#	Team	:	ATX-fengya                #
+#	Discuz	:	http://bbs.anzhi.com      #
+#	ID		:	a798047000                #
+###########################################
+
+
+clear
+echo ""
+echo "------------------------------------------------------------------"
+echo "欢迎使用Esay-ApkTool for Linux"
+echo "Version	:	1.0beta cui"
+echo "Author	:	xiaozhuai"
+echo ""
+echo "当前系统使用的JDK版本为："
+java -version
+echo "------------------------------------------------------------------"
+echo ""
+echo "回车键进入主菜单..."
+read anykey
+function menu(){
+	clear
+	echo ""
+	echo ""
+	echo " -----------------------------------"
+	echo " 选项：                              "
+	echo "     [1] 反编译                      "
+	echo "     [2] 回编译                      "
+	echo "     [3] 加载框架                     "
+	echo "     [0] 退出                        "
+	echo " -----------------------------------"
+	echo -n "键入序号后回车确认："
+	read main_ch
+	case $main_ch in
+		1)clear;decode;menu;;
+		2)clear;build;menu;;
+		3)clear;ins_f;menu;;
+		0)exit;;
+		*)echo"";echo "选项不正确！回车键返回主菜单...";read anykey;menu;;
+	esac
+}
+function decode(){
+	apk_files_n=$(ls *.apk 2> /dev/null | wc -l)
+	if [ "$apk_files_n" = "0" ]; then
+		echo "不存在任何apk!"
+		echo "请将apk置于本程序根目录下"
+		echo ""
+		echo "回车键返回主菜单..."
+		read anykey
+		menu
+	fi
+	echo ""
+	echo "[0] 返回主菜单"
+	echo ""
+	i=(1)
+	for apk_name_l in `ls *.apk`
+	do
+		echo "[$i] $apk_name_l"
+		((i++))
+	done
+	echo ""
+	echo -n "键入序号并回车："
+	read dcode_ch
+	if [ "$dcode_ch" = "0" ];then
+		menu
+	fi
+	n=(1)
+	for apk_name_l2 in `ls *.apk`
+	do
+		if [ "$n" = "$dcode_ch" ];then
+			clear
+			echo "********反编译 $apk_name_l2 ********"
+			echo ""
+			echo -n "是否反编译resources.arsc ? (y/n 默认:y):"
+			read r_yn
+			case $r_yn in
+				n|N)r=-r;;
+				*)r=;;
+			esac
+			echo ""
+			echo -n "是否反编译classes.dex ? (y/n 默认:y):"
+			read s_yn
+			case $s_yn in
+				n|N)s=-s;;
+				*)s=;;
+			esac
+			echo ""
+			echo "开始反编译..."
+			echo ""
+			dir=`echo "$apk_name_l2" | awk -F. '{print $1}'`
+			tools/apktool d -f -o out_project/$dir/ $s $r $apk_name_l2 
+			echo ""
+			echo "反编译完成！"
+			echo "项目目录生成于 out_project/$dir"
+			echo "回车键返回主菜单..."
+			read anykey
+			menu
+		fi
+		((n++))
+	done
+	echo "序号不正确！回车键返回..."
+	read anykey
+	clear
+	decode
+}
+function ins_f(){
+	apk_files_n=$(ls *.apk 2> /dev/null | wc -l)
+	if [ "$apk_files_n" = "0" ]; then
+		echo "不存在任何apk!"
+		echo "请将apk置于本程序根目录下"
+		echo ""
+		echo "回车键返回主菜单..."
+		read anykey
+		menu
+	fi
+	echo ""
+	echo "[0] 返回主菜单"
+	echo ""
+	i=(1)
+	for apk_name_l in `ls *.apk`
+	do
+		echo "[$i] $apk_name_l"
+		((i++))
+	done
+	echo ""
+	echo -n "键入序号并回车："
+	read ins_f_ch
+	if [ "$ins_f_ch" = "0" ];then
+		menu
+	fi
+	n=(1)
+	for apk_name_l2 in `ls *.apk`
+	do
+		if [ "$n" = "$ins_f_ch" ];then
+			clear
+			echo "********加载框架 $apk_name_l2 ********"
+			echo ""
+			echo "开始加载..."
+			echo ""
+			tools/apktool if $apk_name_l2
+			echo ""
+			echo "加载框架完成！"
+			echo "回车键返回主菜单..."
+			read anykey
+			menu
+		fi
+		((n++))
+	done
+	echo "序号不正确！回车键返回..."
+	read anykey
+	clear
+	ins_f
+}
+function ls_dir(){
+	ls -A "$1" | while read line
+	do
+	if [ -d "$1"/"$line" ];then
+			echo "$line"
+	fi
+	done
+	exit
+}
+function build(){
+	project_dirs_n=$(ls_dir out_project/ | wc -l)
+	if [ "$project_dirs_n" = "0" ]; then
+		echo "不存在任何项目目录!"
+		echo "回编译前，需要反编译，或将项目目录置于 out_project/ 下"
+		echo ""
+		echo "回车键返回主菜单..."
+		read anykey
+		menu
+	fi
+	echo ""
+	echo "[0] 返回主菜单"
+	echo ""
+	i=(1)
+	for project_name_l in `ls_dir out_project/`
+	do
+		echo "[$i] $project_name_l"
+		((i++))
+	done
+	echo ""
+	echo -n "键入序号并回车："
+	read build_ch
+	if [ "$build_ch" = "0" ];then
+		menu
+	fi
+	n=(1)
+	for project_name_l2 in `ls_dir out_project/`
+	do
+		if [ "$n" = "$build_ch" ];then
+			clear
+			echo "********回编译 $project_name_l2 ********"
+			echo ""
+			echo "开始回编译..."
+			echo ""
+			PATH=$PATH:`pwd`/tools;
+			export PATH;
+			tools/apktool b -f -o out_apk/$project_name_l2.apk out_project/$project_name_l2
+			echo ""
+			echo "回编译完成！"
+			echo "apk生成于 out_apk/$project_name_l2.apk"
+			echo "回车键返回主菜单..."
+			read anykey
+			menu
+		fi
+		((n++))
+	done
+	echo "序号不正确！回车键返回..."
+	read anykey
+	clear
+	build
+}
+menu
+
